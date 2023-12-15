@@ -1,6 +1,19 @@
 const express = require("express");
+const morgan = require("morgan"); //Morgan midlleware tehtävä 3.7
 const app = express();
 
+app.use(express.json())
+
+
+//3.8 Custom token for POST-requests
+morgan.token('post-data', function (req, res) {
+  return req.method === 'POST' ? JSON.stringify(req.body) : '';
+});
+
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms :post-data'));
+
+
+// 3.1 list persons
 let persons = [
   {
     name: "Arto Hellas",
@@ -24,12 +37,17 @@ let persons = [
   },
 ];
 
-//Hello
+
 app.get("/", (req, res) => {
   res.send("<h1>Hello Phonebook!</h1>");
 });
 
-//Info
+//Persons End point
+app.get("/api/persons", (req, res) => {
+  res.json(persons);
+});
+
+// 3.2 Info page
 function getCurrentDateTime() {
   const currentDateTime = new Date();
   return currentDateTime.toLocaleString();
@@ -40,16 +58,12 @@ const infoHtml = `
   <h2>${getCurrentDateTime()}</h2>
 `;
 
+// Info End point
 app.get("/info", (req, res) => {
   res.send(infoHtml);
 });
 
-//Persons
-app.get("/api/persons", (req, res) => {
-  res.json(persons);
-});
-
-//Person Id
+//3.3 person End point
 app.get('/api/persons/:id', (request, response) => {
     const id = Number(request.params.id)
     const person = persons.find(person => person.id === id)
@@ -61,7 +75,7 @@ app.get('/api/persons/:id', (request, response) => {
     }
   })
 
-  //Delete
+  //3.4 Delete person
   app.delete('/api/persons/:id', (request, response) => {
     const id = Number(request.params.id)
     persons = persons.filter(person => person.id !== id)
@@ -69,7 +83,51 @@ app.get('/api/persons/:id', (request, response) => {
     response.status(204).end()
   })
 
-//PORT
+  //3.5-6 Post person
+
+  //Generate new ID
+  const generateId = () => {
+    const maxId = persons.length > 0
+      ? Math.max(...persons.map(p => p.id))
+      : 0;
+    return maxId + 1;
+  };
+
+  // Check for person name in persons
+  const nameExists = (name) => {
+    return persons.some(p => p.name === name);
+  };
+  
+
+  
+  app.post('/api/persons', (request, response) => {
+    // Extract and destructure name and number from request body.
+    const { name, number } = request.body;
+
+    if (!name || !number) {
+      // Send a 400 Bad Request response with a custom error message
+      return response.status(400).send({ error: 'Name or number is missing' });
+    }
+
+    if (nameExists(name)) {
+      return response.status(400).send({ error: 'Name already exists in the phonebook' });
+    }
+
+    //Create person
+    const person = {
+      name,
+      number,
+      id: generateId()
+    };
+
+    //Add person to persons
+    persons.push(person);
+    response.json(person);
+  });
+  
+  
+
+//Start server
 const PORT = 3001;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
