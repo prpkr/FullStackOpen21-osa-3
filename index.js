@@ -5,6 +5,7 @@ const cors = require('cors')  // Cross-origin resource sharing tehävä 3.9
 
 const app = express();
 
+app.use(express.static('dist'))
 app.use(express.json())
 app.use(cors())
 
@@ -40,10 +41,6 @@ let persons = [
   },
 ];
 
-
-app.get("/", (req, res) => {
-  res.send("<h1>Hello Phonebook!</h1>");
-});
 
 //Persons End point
 app.get("/api/persons", (req, res) => {
