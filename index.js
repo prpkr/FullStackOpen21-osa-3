@@ -1,9 +1,12 @@
 const express = require("express");
 const morgan = require("morgan"); //Morgan midlleware tehtävä 3.7
+const cors = require('cors')  // Cross-origin resource sharing tehävä 3.9
+
+
 const app = express();
 
 app.use(express.json())
-
+app.use(cors())
 
 //3.8 Custom token for POST-requests
 morgan.token('post-data', function (req, res) {
