@@ -1,6 +1,7 @@
 const express = require("express");
 const morgan = require("morgan"); //Morgan midlleware tehtävä 3.7
 const cors = require('cors')  // Cross-origin resource sharing tehävä 3.9
+const Person = require('./models/person') //Eriytetty moduuli tehtävä 3.13
 
 
 const app = express();
@@ -9,7 +10,7 @@ app.use(express.static('dist'))
 app.use(express.json())
 app.use(cors())
 
-//3.8 Custom token for POST-requests
+//3.8 Custom token for logging POST-requests
 morgan.token('post-data', function (req, res) {
   return req.method === 'POST' ? JSON.stringify(req.body) : '';
 });
@@ -17,88 +18,60 @@ morgan.token('post-data', function (req, res) {
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :post-data'));
 
 
-// 3.1 list persons
-let persons = [
-  {
-    name: "Arto Hellas",
-    number: "040-123456",
-    id: 1,
-  },
-  {
-    name: "Ada Lovelace",
-    number: "39-44-5323523",
-    id: 2,
-  },
-  {
-    name: "Dan Abramov",
-    number: "12-43-234345",
-    id: 3,
-  },
-  {
-    name: "Mary Poppendieck",
-    number: "39-23-6423122",
-    id: 4,
-  },
-];
-
-
 //Persons End point
 app.get("/api/persons", (req, res) => {
-  res.json(persons);
+  Person.find({}).then(persons => {
+    res.json(persons);
+  });
 });
 
-// 3.2 Info page
+
+// 3.2 Info End point
 function getCurrentDateTime() {
   const currentDateTime = new Date();
   return currentDateTime.toLocaleString();
 }
 
-const infoHtml = `
-  <h2>Phonebook has info for ${persons.length} people.</h2>
-  <h2>${getCurrentDateTime()}</h2>
-`;
-
-// Info End point
-app.get("/info", (req, res) => {
-  res.send(infoHtml);
+app.get('/info', (req, res) => {
+  Person.countDocuments().then(count => {
+    const infoHtml = `
+      <h2>Phonebook has info for ${count} people.</h2>
+      <h2>${getCurrentDateTime()}</h2>
+    `;
+    res.send(infoHtml);
+  });
 });
+
 
 //3.3 person End point
 app.get('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    const person = persons.find(person => person.id === id)
-    
+  Person.findById(request.params.id).then(person => {
     if (person) {
-      response.json(person)
+      response.json(person);
     } else {
       response.status(404).end()
     }
   })
+  .catch(error => next(error))
+});
 
-  //3.4 Delete person
-  app.delete('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    persons = persons.filter(person => person.id !== id)
-  
-    response.status(204).end()
-  })
+
+//3.4 Delete person
+app.delete('/api/persons/:id', (request, response, next) => {
+  Person.findByIdAndDelete(request.params.id)
+    .then(result => {
+      response.status(204).end()
+    })
+    .catch(error => next(error))
+})
 
   //3.5-6 Post person
 
-  //Generate new ID
-  const generateId = () => {
-    const maxId = persons.length > 0
-      ? Math.max(...persons.map(p => p.id))
-      : 0;
-    return maxId + 1;
-  };
-
-  // Check for person name in persons
+  /* Check for person name in persons
   const nameExists = (name) => {
     return persons.some(p => p.name === name);
   };
-  
-
+  */
   
   app.post('/api/persons', (request, response) => {
     // Extract and destructure name and number from request body.
@@ -109,26 +82,62 @@ app.get('/api/persons/:id', (request, response) => {
       return response.status(400).send({ error: 'Name or number is missing' });
     }
 
+    /* Toistaiseksi ei tarvi.
     if (nameExists(name)) {
       return response.status(400).send({ error: 'Name already exists in the phonebook' });
     }
+    */
 
     //Create person
+    const person = new Person({
+      name,
+      number,
+    })
+
+    //Add person to DB
+    person.save().then(savedPerson => {
+      response.json(savedPerson)
+    })
+  });
+
+  //PUT
+  app.put('/api/persons/:id', (request, response, next) => {
+    const { name, number } = request.body;
+  
     const person = {
       name,
       number,
-      id: generateId()
-    };
-
-    //Add person to persons
-    persons.push(person);
-    response.json(person);
-  });
+    }
   
+    Person.findByIdAndUpdate(request.params.id, person, { new: true })
+      .then(updatedPerson => {
+        response.json(updatedPerson)
+      })
+      .catch(error => next(error))
+  })
+
+//Error handling tehtävä 3.16
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: 'unknown endpoint' })
+}
+
+// olemattomien osoitteiden käsittely
+app.use(unknownEndpoint)
+
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message)
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' })
+  }
+  next(error)
+}
+
+app.use(errorHandler)
   
 
 //Start server
-const PORT = 3001;
+const PORT = process.env.PORT;
+
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`)
 });
