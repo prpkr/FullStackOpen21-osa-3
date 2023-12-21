@@ -1,8 +1,8 @@
-require('dotenv').config();
+require('dotenv').config()
 const mongoose = require('mongoose')
 
-const password = process.env.PASSWORD;
-const url = process.env.DB_URL.replace('<password>', password);
+const password = process.env.PASSWORD
+const url = process.env.DB_URL.replace('<password>', password)
 
 mongoose.set('strictQuery', false)
 mongoose.connect(url)
@@ -14,9 +14,9 @@ joten sieltä ei kannata suoraan copy-pasteta koodia*/
 const personSchema = new mongoose.Schema({
   name: String,
   number: String
-});
+})
 
-const Person = mongoose.model('Person', personSchema);
+const Person = mongoose.model('Person', personSchema)
 
 /*
 const person = new Person({

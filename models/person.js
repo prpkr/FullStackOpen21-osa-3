@@ -10,7 +10,7 @@ const url = process.env.DB_URL.replace('<password>', password)
 
 
 mongoose.connect(url)
-  .then(result => {
+  .then(() => {
     console.log('connected to MongoDB')
   })
   .catch((error) => {
