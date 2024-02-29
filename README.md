@@ -5,5 +5,5 @@
  3.12
 
 
-Link to app in Reddit: 
+Link to app in Render: 
 https://puhelinluettelo-g6oi.onrender.com

@@ -8,7 +8,7 @@ mongoose.set('strictQuery', false)
 mongoose.connect(url)
 
 /* Muista:
-Mongoosen dokumentaatiossa käytetään joka paikassa promisejen then-metodien sijaan takaisinkutsufunktioita, 
+Mongoosen dokumentaatiossa käytetään joka paikassa promisejen then-metodien sijaan takaisinkutsufunktioita,
 joten sieltä ei kannata suoraan copy-pasteta koodia*/
 
 const personSchema = new mongoose.Schema({
@@ -31,7 +31,7 @@ person.save().then(result => {
 */
 
 Person.find({}).then(result => {
-  result.forEach(person=> {
+  result.forEach(person => {
     console.log(person)
   })
   mongoose.connection.close()
